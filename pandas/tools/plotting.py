@@ -275,14 +275,19 @@ def scatter_matrix(frame, alpha=0.5, figsize=None, ax=None, grid=False,
             ax.set_xlabel('')
             ax.set_ylabel('')
 
-            _label_axis(ax, kind='x', label=b, position='bottom', rotate=True)
-
-            _label_axis(ax, kind='y', label=a, position='left')
-
-            if j!= 0:
-                ax.yaxis.set_visible(False)
+            if j != 0:
+                ax.yaxis.set_ticklabels([])
+                ax.tick_params('both', size=0, which='both')
+            else:
+                _label_axis(ax, kind='y', label=a, position='left')
             if i != n-1:
-                ax.xaxis.set_visible(False)
+                ax.xaxis.set_ticklabels([])
+                ax.tick_params('both', size=0, which='both')
+            else:
+                _label_axis(ax, kind='x', label=b, position='bottom', rotate=True)
+
+            if grid is not None:
+                ax.grid(grid)
 
     for ax in axes.flat:
         setp(ax.get_xticklabels(), fontsize=8)
@@ -477,7 +482,6 @@ def andrews_curves(data, class_column, ax=None, samples=200, colormap=None,
             ax.plot(x, y, color=col_dict[class_col[i]], **kwds)
 
     ax.legend(loc='upper right')
-    ax.grid()
     return ax
 
 
@@ -638,7 +642,6 @@ def parallel_coordinates(data, class_column, cols=None, ax=None, colors=None,
     ax.set_xticklabels(df.columns)
     ax.set_xlim(x[0], x[-1])
     ax.legend(loc='upper right')
-    ax.grid()
     return ax
 
 
@@ -706,7 +709,6 @@ def autocorrelation_plot(series, ax=None):
     ax.set_xlabel("Lag")
     ax.set_ylabel("Autocorrelation")
     ax.plot(x, y)
-    ax.grid()
     return ax
 
 
@@ -737,6 +739,8 @@ def grouped_hist(data, column=None, by=None, ax=None, bins=50, figsize=None,
     """
     def plot_group(group, ax):
         ax.hist(group.dropna().values, bins=bins, **kwargs)
+        if grid is not None:
+            ax.grid(grid)
 
     fig, axes = _grouped_plot(plot_group, data, column=column,
                               by=by, sharex=sharex, sharey=sharey,
@@ -791,7 +795,8 @@ class MPLPlot(object):
         self.rot = rot
 
         if grid is None:
-            grid = False if secondary_y else True
+            import matplotlib as mpl
+            grid = False if secondary_y else mpl.rcParams['axes.grid']
 
         self.grid = grid
         self.legend = legend
@@ -1896,7 +1901,8 @@ def boxplot(data, column=None, by=None, ax=None, fontsize=None,
             ax.set_xticklabels(keys, rotation=rot, fontsize=fontsize)
         else:
             ax.set_yticklabels(keys, rotation=rot, fontsize=fontsize)
-        ax.grid(grid)
+        if grid is not None:
+            ax.grid(grid)
 
         ret = bp
 
@@ -1944,10 +1950,12 @@ def scatter_plot(data, x, y, by=None, ax=None, figsize=None, grid=False, **kwarg
         xvals = group[x].values
         yvals = group[y].values
         ax.scatter(xvals, yvals, **kwargs)
-        ax.grid(grid)
 
     if by is not None:
         fig = _grouped_plot(plot_group, data, by=by, figsize=figsize, ax=ax)
+        if grid is not None:
+            for ax in fig[1].flat:
+                ax.grid(grid)
     else:
         if ax is None:
             fig = plt.figure()
@@ -1957,8 +1965,8 @@ def scatter_plot(data, x, y, by=None, ax=None, figsize=None, grid=False, **kwarg
         plot_group(data, ax)
         ax.set_ylabel(com.pprint_thing(y))
         ax.set_xlabel(com.pprint_thing(x))
-
-        ax.grid(grid)
+        if grid is not None:
+            ax.grid(grid)
 
     return fig
 
@@ -2043,7 +2051,8 @@ def hist_frame(data, column=None, by=None, grid=True, xlabelsize=None,
         ax.yaxis.set_visible(True)
         ax.hist(data[col].dropna().values, **kwds)
         ax.set_title(col)
-        ax.grid(grid)
+        if grid is not None:
+            ax.grid(grid)
 
         if xlabelsize is not None:
             plt.setp(ax.get_xticklabels(), fontsize=xlabelsize)
@@ -2113,7 +2122,8 @@ def hist_series(self, by=None, ax=None, grid=True, xlabelsize=None,
         values = self.dropna().values
 
         ax.hist(values, **kwds)
-        ax.grid(grid)
+        if grid is not None:
+            ax.grid(grid)
         axes = np.array([ax])
     else:
         if 'figure' in kwds:
@@ -2286,7 +2296,8 @@ def _grouped_plot_by_column(plotf, data, columns=None, by=None,
         plotf(gp_col, ax, **kwargs)
         ax.set_title(col)
         ax.set_xlabel(com.pprint_thing(by))
-        ax.grid(grid)
+        if grid is not None:
+            ax.grid(grid)
 
     byline = by[0] if len(by) == 1 else by
     fig.suptitle('Boxplot grouped by %s' % byline)
